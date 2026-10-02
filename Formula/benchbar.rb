@@ -10,8 +10,8 @@
 class Benchbar < Formula
   desc "Set up, run and repair local Frappe and ERPNext benches on macOS"
   homepage "https://benchbar.akashmishra.com/"
-  url "https://github.com/askysh/benchbar/releases/download/v0.7.0/benchbar-cli-0.7.0.tar.gz"
-  sha256 "898a79c03a93fcf3012d27672321a1f60fadf0bf02a2d8b6f14237ef7eb3c130"
+  url "https://github.com/askysh/benchbar/releases/download/v0.7.1/benchbar-cli-0.7.1.tar.gz"
+  sha256 "1313a1dbc2573af7f1aab6b00f3aec43078a4447fedb1f60f94d4c42451182d5"
   license "MIT"
 
   livecheck do
