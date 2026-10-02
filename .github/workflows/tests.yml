@@ -1,0 +1,52 @@
+# The check every pull request needs before it merges (the release
+# workflow of askysh/benchbar opens them with auto-merge): brew style for
+# the tap, then brew audit, install, test and uninstall for the formula and
+# the cask that are in it.
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: tests
+    runs-on: macos-latest
+    timeout-minutes: 30
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_ANALYTICS: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+      HOMEBREW_NO_ENV_HINTS: "1"
+    steps:
+      - name: Set up Homebrew with this tap
+        uses: Homebrew/actions/setup-homebrew@main
+
+      - name: brew style
+        run: brew style askysh/tap
+
+      - name: Formula and cask
+        run: |
+          tap="$(brew --repository askysh/tap)"
+          if [ -f "$tap/Formula/benchbar.rb" ]; then
+            brew audit --strict --online --formula askysh/tap/benchbar
+            brew install askysh/tap/benchbar
+            brew test askysh/tap/benchbar
+          fi
+          if [ -f "$tap/Casks/benchbar-app.rb" ]; then
+            brew audit --strict --online --cask askysh/tap/benchbar-app
+            brew install --cask askysh/tap/benchbar-app
+            brew uninstall --cask askysh/tap/benchbar-app
+          fi
+          if [ -f "$tap/Formula/benchbar.rb" ]; then
+            brew uninstall askysh/tap/benchbar
+          fi
