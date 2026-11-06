@@ -7,8 +7,8 @@
 # installs the formula first when both names are given:
 #   brew install askysh/tap/benchbar askysh/tap/benchbar-app
 cask "benchbar-app" do
-  version "0.8.1"
-  sha256 "297632e5189506ef55a27060f9d9398019fd48da4e111a64d0d048ab21d1ae9b"
+  version "0.8.2"
+  sha256 "5bc37ab93218b66dd8a3ec9a4d2e1f16639d2ad4a92177caa3952e3b344fc9d6"
 
   url "https://github.com/askysh/benchbar/releases/download/v#{version}/BenchBar-#{version}.dmg"
   name "BenchBar"
