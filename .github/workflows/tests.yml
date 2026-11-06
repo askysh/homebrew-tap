@@ -1,7 +1,21 @@
-# The check every pull request needs before it merges (the release
-# workflow of askysh/benchbar opens them with auto-merge): brew style for
-# the tap, then brew audit, install, test and uninstall for the formula and
-# the casks that are in it (benchbar's and Margin's).
+# The check every pull request needs before it merges. The release
+# workflows of askysh/benchbar and askysh/margin open these pull requests
+# with auto-merge.
+#
+# brew style always checks the whole tap. The rest depends on the event:
+#
+# - A pull request that changes formulae or casks: brew audit --strict
+#   --online (livecheck included), install, test and uninstall for those
+#   files only. The files of the other app are not checked, so a release
+#   of one app never waits for a release of the other.
+# - A push to main, a manual run, or a pull request that changes no
+#   formula or cask (README, this workflow): the same for all files, but
+#   without the livecheck audit. A version older than the latest release
+#   gives a warning, not a failure: that app's own release pull request
+#   is the fix.
+#
+# Branch protection on main requires the check called "tests". Keep the
+# job name.
 name: tests
 
 on:
@@ -15,7 +29,7 @@ permissions:
 
 concurrency:
   group: tests-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   tests:
@@ -27,31 +41,83 @@ jobs:
       HOMEBREW_NO_ANALYTICS: "1"
       HOMEBREW_NO_INSTALL_CLEANUP: "1"
       HOMEBREW_NO_ENV_HINTS: "1"
+      HOMEBREW_GITHUB_API_TOKEN: ${{ github.token }}
     steps:
+      # Checks out the commit under test (for a pull request, its merge
+      # into main) as the askysh/tap tap, and trusts the tap.
       - name: Set up Homebrew with this tap
         uses: Homebrew/actions/setup-homebrew@main
 
       - name: brew style
         run: brew style askysh/tap
 
-      - name: Formula and cask
+      - name: Select the formulae and casks to check
+        id: select
+        env:
+          EVENT: ${{ github.event_name }}
         run: |
-          tap="$(brew --repository askysh/tap)"
-          if [ -f "$tap/Formula/benchbar.rb" ]; then
-            brew audit --strict --online --formula askysh/tap/benchbar
-            brew install askysh/tap/benchbar
-            brew test askysh/tap/benchbar
+          cd "$(brew --repository askysh/tap)"
+          changed=""
+          if [ "$EVENT" = "pull_request" ]; then
+            # HEAD merges the pull request into main, so HEAD^1 is main.
+            changed="$(git diff --name-only --diff-filter=d HEAD^1 HEAD -- Formula Casks | grep -E '^(Formula|Casks)/[^/]+\.rb$' || true)"
           fi
-          if [ -f "$tap/Casks/benchbar-app.rb" ]; then
-            brew audit --strict --online --cask askysh/tap/benchbar-app
-            brew install --cask askysh/tap/benchbar-app
-            brew uninstall --cask askysh/tap/benchbar-app
+          if [ -n "$changed" ]; then
+            mode=changed
+            files="$changed"
+          else
+            mode=all
+            files="$(ls Formula/*.rb Casks/*.rb 2>/dev/null || true)"
           fi
-          if [ -f "$tap/Formula/benchbar.rb" ]; then
-            brew uninstall askysh/tap/benchbar
-          fi
-          if [ -f "$tap/Casks/margin.rb" ]; then
-            brew audit --strict --online --cask askysh/tap/margin
-            brew install --cask askysh/tap/margin
-            brew uninstall --cask askysh/tap/margin
-          fi
+          formulae="$(echo "$files" | sed -n 's|^Formula/\(.*\)\.rb$|\1|p' | xargs)"
+          casks="$(echo "$files" | sed -n 's|^Casks/\(.*\)\.rb$|\1|p' | xargs)"
+          echo "::notice title=Checked (${mode})::formulae: ${formulae:-none}; casks: ${casks:-none}"
+          {
+            echo "mode=$mode"
+            echo "formulae=$formulae"
+            echo "casks=$casks"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: brew audit
+        env:
+          MODE: ${{ steps.select.outputs.mode }}
+          FORMULAE: ${{ steps.select.outputs.formulae }}
+          CASKS: ${{ steps.select.outputs.casks }}
+        run: |
+          # Only casks have the livecheck audit: formulae do not compare versions.
+          except=""
+          [ "$MODE" = "changed" ] || except="--except=livecheck_version"
+          for f in $FORMULAE; do
+            brew audit --strict --online --formula "askysh/tap/$f"
+          done
+          for c in $CASKS; do
+            brew audit --strict --online $except --cask "askysh/tap/$c"
+          done
+
+      - name: Install, test and uninstall
+        env:
+          FORMULAE: ${{ steps.select.outputs.formulae }}
+          CASKS: ${{ steps.select.outputs.casks }}
+        run: |
+          for f in $FORMULAE; do
+            brew install "askysh/tap/$f"
+            brew test "askysh/tap/$f"
+          done
+          for c in $CASKS; do
+            brew install --cask "askysh/tap/$c"
+            brew uninstall --cask "askysh/tap/$c"
+          done
+          # After the casks: benchbar-app depends on the benchbar formula.
+          for f in $FORMULAE; do
+            brew uninstall "askysh/tap/$f"
+          done
+
+      - name: Report versions older than the latest release
+        if: steps.select.outputs.mode == 'all'
+        continue-on-error: true
+        run: |
+          brew livecheck --tap askysh/tap --json --quiet \
+            | jq -r '.[] | select(.version.outdated) | "\(.formula // .cask) \(.version.current) \(.version.latest)"' \
+            | while read -r name have latest; do
+                echo "::warning title=${name} is outdated::The tap has ${name} ${have}, the latest release is ${latest}. Run that app's homebrew-tap workflow for ${latest}."
+              done
