@@ -1,7 +1,7 @@
 # The check every pull request needs before it merges (the release
 # workflow of askysh/benchbar opens them with auto-merge): brew style for
 # the tap, then brew audit, install, test and uninstall for the formula and
-# the cask that are in it.
+# the casks that are in it (benchbar's and Margin's).
 name: tests
 
 on:
@@ -49,4 +49,9 @@ jobs:
           fi
           if [ -f "$tap/Formula/benchbar.rb" ]; then
             brew uninstall askysh/tap/benchbar
+          fi
+          if [ -f "$tap/Casks/margin.rb" ]; then
+            brew audit --strict --online --cask askysh/tap/margin
+            brew install --cask askysh/tap/margin
+            brew uninstall --cask askysh/tap/margin
           fi

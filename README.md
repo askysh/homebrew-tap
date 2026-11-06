@@ -1,7 +1,23 @@
 # askysh/homebrew-tap
 
-Homebrew formula and cask for [BenchBar](https://github.com/askysh/benchbar):
-local Frappe and ERPNext benches on macOS, set up, run and repaired from
+Homebrew formula and casks for [BenchBar](https://github.com/askysh/benchbar) and
+[Margin](https://github.com/askysh/margin).
+
+## Margin
+
+A meeting notepad for macOS: local transcription, speaker names, plain Markdown.
+
+```bash
+brew install --cask askysh/tap/margin
+```
+
+Apple silicon, macOS Sonoma or later (14.4 or later to record calls). Margin updates
+itself. `brew uninstall --cask margin` removes the app; `--zap` also removes its settings
+and models, never your meetings.
+
+## BenchBar
+
+Local Frappe and ERPNext benches on macOS, set up, run and repaired from
 the terminal or the menu bar.
 
 ```bash
@@ -38,6 +54,11 @@ The benches, their sites and `~/.local/state/benchbar` (logs, backups,
 remembered benches) stay.
 
 ## How this tap is updated
+
+Publishing a release of askysh/margin runs its `homebrew-tap.yml` workflow the same
+way, for `Casks/margin.rb` (template in
+[packaging/homebrew](https://github.com/askysh/margin/tree/main/packaging/homebrew)).
+
 
 Publishing a release of askysh/benchbar runs its `homebrew-tap.yml`
 workflow: it renders `Formula/benchbar.rb` and, for a signed release,
