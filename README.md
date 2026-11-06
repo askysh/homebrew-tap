@@ -1,24 +1,48 @@
 # askysh/homebrew-tap
 
-Homebrew formula and casks for [BenchBar](https://github.com/askysh/benchbar) and
-[Margin](https://github.com/askysh/margin).
+The Homebrew tap for two macOS apps:
+
+- [Margin](https://github.com/askysh/margin): a meeting notepad with local
+  transcription, speaker names and plain Markdown notes.
+- [BenchBar](https://benchbar.akashmishra.com/): local Frappe and ERPNext
+  benches, set up, run and repaired from the terminal or the menu bar.
+
+| Name | Kind | What it installs | Where |
+|---|---|---|---|
+| `margin` | cask | Margin.app | Apple silicon, macOS Sonoma or later |
+| `benchbar` | formula | the `benchbar` command line tool | Apple silicon and Intel |
+| `benchbar-app` | cask | BenchBar.app, the menu bar app. It needs the `benchbar` formula. | Apple silicon, macOS Sonoma or later |
 
 ## Margin
 
-A meeting notepad for macOS: local transcription, speaker names, plain Markdown.
+### Install
 
 ```bash
 brew install --cask askysh/tap/margin
 ```
 
-Apple silicon, macOS Sonoma or later (14.4 or later to record calls). Margin updates
-itself. `brew uninstall --cask margin` removes the app; `--zap` also removes its settings
-and models, never your meetings.
+Margin needs macOS 14.4 or later to record calls.
+
+### Updates
+
+Margin updates itself (Settings → Updates). To force an update through Homebrew:
+
+```bash
+brew upgrade --cask --greedy askysh/tap/margin
+```
+
+### Uninstall
+
+```bash
+brew uninstall --cask margin
+```
+
+This removes the app. Add `--zap` to also remove its settings and models.
+Your meetings stay in the folder you chose, also after `--zap`.
 
 ## BenchBar
 
-Local Frappe and ERPNext benches on macOS, set up, run and repaired from
-the terminal or the menu bar.
+### Install
 
 ```bash
 brew install askysh/tap/benchbar askysh/tap/benchbar-app
@@ -26,23 +50,19 @@ benchbar install              # sets up the Mac, asks for sudo once
 source ~/.zshrc && benchup
 ```
 
-| Name | What | Where |
-|---|---|---|
-| `benchbar` (formula) | the `benchbar` command line tool | Apple silicon and Intel |
-| `benchbar-app` (cask) | BenchBar.app, the menu bar app; installs the formula too | Apple silicon, macOS Sonoma or later |
+Type both names. Homebrew trusts a third party tap only for the names on
+the command line. With the cask name alone, it refuses the formula that
+the cask needs. For the command line tool alone:
+`brew install askysh/tap/benchbar`.
 
-Type both names: Homebrew trusts a third party tap only for the names on
-the command line, so the cask alone would be refused its formula. For the
-command line tool alone: `brew install askysh/tap/benchbar`.
-
-## Updates
+### Updates
 
 - The command line tool: `brew upgrade askysh/tap/benchbar`, or
   `benchbar self-update`, which runs it.
-- The app updates itself. To force it through Homebrew:
+- The app updates itself. To force an update through Homebrew:
   `brew upgrade --cask --greedy askysh/tap/benchbar-app`.
 
-## Uninstall
+### Uninstall
 
 ```bash
 benchbar uninstall-service --all     # brew uninstall cannot stop the background services
@@ -55,17 +75,32 @@ remembered benches) stay.
 
 ## How this tap is updated
 
-Publishing a release of askysh/margin runs its `homebrew-tap.yml` workflow the same
-way, for `Casks/margin.rb` (template in
-[packaging/homebrew](https://github.com/askysh/margin/tree/main/packaging/homebrew)).
+Each app has a `homebrew-tap.yml` workflow. It starts when a release of the
+app is published. It renders the app's files from templates, audits,
+installs and tests them, then opens a pull request here. The pull request
+merges itself after the `tests` check passes.
 
+| App | Files here | Templates |
+|---|---|---|
+| Margin | `Casks/margin.rb` | [askysh/margin: packaging/homebrew](https://github.com/askysh/margin/tree/main/packaging/homebrew) |
+| BenchBar | `Formula/benchbar.rb`, and `Casks/benchbar-app.rb` for a signed release | [askysh/benchbar: packaging/homebrew](https://github.com/askysh/benchbar/tree/main/packaging/homebrew) |
 
-Publishing a release of askysh/benchbar runs its `homebrew-tap.yml`
-workflow: it renders `Formula/benchbar.rb` and, for a signed release,
-`Casks/benchbar-app.rb`, installs and tests both, and opens a pull request
-here that merges itself once the checks pass. Change the templates in
-[packaging/homebrew](https://github.com/askysh/benchbar/tree/main/packaging/homebrew),
-not the files here.
+Change the templates, not the files here.
+
+The `tests` check ([tests.yml](.github/workflows/tests.yml)) runs
+`brew style` on the whole tap. On a pull request that changes formulae or
+casks, it audits (livecheck included), installs and uninstalls only those
+files. Thus a release of one app does not wait for a release of the other.
+On `main`, it checks all files without livecheck. A version older than the
+latest release gives a warning, not a failure.
+
+## Links
+
+- Margin: [source](https://github.com/askysh/margin),
+  [releases](https://github.com/askysh/margin/releases)
+- BenchBar: [website](https://benchbar.akashmishra.com/),
+  [source](https://github.com/askysh/benchbar),
+  [releases](https://github.com/askysh/benchbar/releases)
 
 Frappe and ERPNext are trademarks of Frappe Technologies. BenchBar is not
 affiliated with or endorsed by them.
