@@ -2,8 +2,8 @@
 # and the DMG's sha256; .github/workflows/homebrew-tap.yml puts the result in
 # Casks/margin.rb of github.com/askysh/homebrew-tap once a release is published.
 cask "margin" do
-  version "0.0.10"
-  sha256 "51541bb5c0759f50d5694dcaf73c9e707dc7959a884a59ccc5df6efe167e8daf"
+  version "0.0.11"
+  sha256 "cd464170e5841c3ad462bbbe6aea3feaeaa592ec0fec5c5fae3acf9a74ab9e6f"
 
   url "https://github.com/askysh/margin/releases/download/v#{version}/Margin-#{version}.dmg"
   name "Margin"
